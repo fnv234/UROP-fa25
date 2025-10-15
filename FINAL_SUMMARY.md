@@ -33,7 +33,21 @@ Your `multi-agent_setup.py` failed to extract data from Forio simulations becaus
 
 ## 🚀 Quick Start
 
-### 1. Run the Mock Demo (Recommended)
+### Option 1: Web Dashboard (NEW! ⭐)
+```bash
+python dashboard.py
+```
+Then open **http://localhost:5000** in your browser
+
+Features:
+- ✅ Interactive web interface
+- ✅ Real-time bot analysis
+- ✅ Click-to-analyze runs
+- ✅ Live charts and visualizations
+- ✅ Forio connection status
+- ✅ REST API endpoints
+
+### Option 2: Command Line Demo
 ```bash
 python multi_agent_demo_mock.py
 ```
