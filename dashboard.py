@@ -66,8 +66,15 @@ def get_forio_token():
         return None
 
 
+def load_manual_data():
+    """Load manually entered simulation data."""
+    if os.path.exists('simulation_data.json'):
+        with open('simulation_data.json', 'r') as f:
+            return json.load(f)
+    return {}
+
 def fetch_forio_runs(limit=10):
-    """Fetch run metadata from Forio (no variables available yet)."""
+    """Fetch run metadata from Forio and merge with manual data."""
     token = get_forio_token()
     if not token:
         return []
@@ -79,7 +86,22 @@ def fetch_forio_runs(limit=10):
     try:
         resp = requests.get(url, headers=headers)
         if resp.status_code == 200:
-            return resp.json()
+            runs = resp.json()
+            
+            # Load manual data
+            manual_data = load_manual_data()
+            
+            # Merge manual data with run metadata
+            for run in runs:
+                run_id = run['id']
+                if run_id in manual_data:
+                    # Merge manual data into run
+                    run.update(manual_data[run_id])
+                    run['has_data'] = True
+                else:
+                    run['has_data'] = False
+            
+            return runs
     except:
         pass
     return []
@@ -93,22 +115,29 @@ def index():
 
 @app.route('/api/runs')
 def api_runs():
-    """Get simulation runs (mock data for now)."""
-    # Try to fetch real runs for metadata
-    real_runs = fetch_forio_runs(5)
+    """Get simulation runs (manual data if available, otherwise mock)."""
+    # Try to fetch real runs with manual data
+    real_runs = fetch_forio_runs(10)
     
-    # Generate mock data with realistic structure
-    mock_runs = generate_mock_runs(5)
+    # Filter to only runs with data
+    runs_with_data = [r for r in real_runs if r.get('has_data')]
     
-    # If we have real runs, use their metadata
-    if real_runs:
-        for i, (mock, real) in enumerate(zip(mock_runs, real_runs)):
-            mock['id'] = real.get('id', f'mock_{i}')
-            mock['created'] = real.get('created', datetime.now().isoformat())
-            mock['user'] = real.get('user', {}).get('userName', 'Unknown')
-            mock['group'] = real.get('scope', {}).get('group', 'default')
-    
-    return jsonify(mock_runs)
+    if runs_with_data:
+        # Use real runs with manual data
+        return jsonify(runs_with_data)
+    else:
+        # Fall back to mock data for demonstration
+        mock_runs = generate_mock_runs(5)
+        
+        # If we have real run metadata, use it
+        if real_runs:
+            for i, (mock, real) in enumerate(zip(mock_runs, real_runs[:5])):
+                mock['id'] = real.get('id', f'mock_{i}')
+                mock['created'] = real.get('created', datetime.now().isoformat())
+                mock['user'] = real.get('user', {}).get('userName', 'Unknown')
+                mock['group'] = real.get('scope', {}).get('group', 'default')
+        
+        return jsonify(mock_runs)
 
 
 @app.route('/api/evaluate', methods=['POST'])
