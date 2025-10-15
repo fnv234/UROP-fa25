@@ -7,7 +7,6 @@ Run this first to make sure everything is configured correctly.
 import os
 import base64
 import requests
-import json
 from dotenv import load_dotenv
 
 load_dotenv()
