@@ -138,7 +138,16 @@
                 const bots = await response.json();
                 const container = document.getElementById('bot-cards');
                 
-                container.innerHTML = bots.map(bot => `
+                container.innerHTML = bots.map(bot => {
+                    // Format target display
+                    let targetText = '';
+                    if (bot.target.min !== undefined) {
+                        targetText = `≥ ${bot.target.min.toLocaleString()}`;
+                    } else if (bot.target.max !== undefined) {
+                        targetText = `≤ ${bot.target.max.toLocaleString()}`;
+                    }
+                    
+                    return `
                     <div class="bg-gradient-to-br from-white to-gray-50 rounded-lg shadow-md p-6 border-l-4 border-blue-500">
                         <div class="flex items-center justify-between mb-3">
                             <h3 class="text-lg font-bold text-gray-800">${bot.name}</h3>
@@ -147,27 +156,45 @@
                         <div class="space-y-2 text-sm">
                             <div class="flex justify-between">
                                 <span class="text-gray-600">Focus:</span>
-                                <span class="font-semibold">${bot.kpi_focus}</span>
+                                <span class="font-semibold">${bot.kpi_focus.replace(/_/g, ' ')}</span>
                             </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Risk Tolerance:</span>
-                                <div class="flex-1 ml-2">
-                                    <div class="bg-gray-200 rounded-full h-2">
-                                        <div class="bg-blue-600 h-2 rounded-full" style="width: ${bot.personality.risk_tolerance * 100}%"></div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Target:</span>
+                                <span class="font-bold text-blue-600">${targetText}</span>
+                            </div>
+                            <div class="border-t pt-2 mt-2">
+                                <div class="text-xs text-gray-500 mb-2">Personality Traits</div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-gray-600 text-xs">Risk Tolerance:</span>
+                                    <div class="flex-1 ml-2 max-w-[100px]">
+                                        <div class="bg-gray-200 rounded-full h-2">
+                                            <div class="bg-blue-600 h-2 rounded-full" style="width: ${bot.personality.risk_tolerance * 100}%"></div>
+                                        </div>
                                     </div>
+                                    <span class="text-xs text-gray-500 ml-1">${(bot.personality.risk_tolerance * 100).toFixed(0)}%</span>
                                 </div>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Ambition:</span>
-                                <div class="flex-1 ml-2">
-                                    <div class="bg-gray-200 rounded-full h-2">
-                                        <div class="bg-green-600 h-2 rounded-full" style="width: ${bot.personality.ambition * 100}%"></div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-gray-600 text-xs">Friendliness:</span>
+                                    <div class="flex-1 ml-2 max-w-[100px]">
+                                        <div class="bg-gray-200 rounded-full h-2">
+                                            <div class="bg-purple-600 h-2 rounded-full" style="width: ${bot.personality.friendliness * 100}%"></div>
+                                        </div>
                                     </div>
+                                    <span class="text-xs text-gray-500 ml-1">${(bot.personality.friendliness * 100).toFixed(0)}%</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600 text-xs">Ambition:</span>
+                                    <div class="flex-1 ml-2 max-w-[100px]">
+                                        <div class="bg-gray-200 rounded-full h-2">
+                                            <div class="bg-green-600 h-2 rounded-full" style="width: ${bot.personality.ambition * 100}%"></div>
+                                        </div>
+                                    </div>
+                                    <span class="text-xs text-gray-500 ml-1">${(bot.personality.ambition * 100).toFixed(0)}%</span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                `).join('');
+                `}).join('');
             } catch (error) {
                 console.error('Failed to load bots:', error);
             }

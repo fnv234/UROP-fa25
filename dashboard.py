@@ -12,10 +12,11 @@ import json
 from datetime import datetime
 import random
 
-# Import our bot classes
+# Import our bot classes and data extractor
 import sys
 sys.path.append(os.path.dirname(__file__))
 from multi_agent_demo_mock import ExecutiveBot, BoardRoom, generate_mock_runs
+from forio_data_extractor import ForioDataExtractor
 
 load_dotenv()
 PUBLIC_KEY = os.getenv("PUBLIC_KEY")
@@ -49,6 +50,24 @@ coo = ExecutiveBot(
 
 board = BoardRoom([cfo, cro, coo])
 
+# Initialize data extractor
+extractor = ForioDataExtractor()
+
+# Load configuration
+def load_config():
+    """Load extraction configuration from forio_config.json."""
+    if os.path.exists('forio_config.json'):
+        with open('forio_config.json', 'r') as f:
+            return json.load(f)
+    return {
+        'variables': {
+            'kpis': ['accumulated_profit', 'compromised_systems', 'systems_availability'],
+            'budgets': ['prevention_budget', 'detection_budget', 'response_budget']
+        },
+        'groups': None,
+        'model_name': None
+    }
+
 
 def get_forio_token():
     """Get OAuth token from Forio."""
@@ -74,37 +93,75 @@ def load_manual_data():
     return {}
 
 def fetch_forio_runs(limit=10):
-    """Fetch run metadata from Forio and merge with manual data."""
-    token = get_forio_token()
-    if not token:
-        return []
+    """Fetch run data from Forio using enhanced extraction with variables."""
+    config = load_config()
     
-    headers = {"Authorization": f"Bearer {token}"}
-    url = f"https://forio.com/v2/run/{FORIO_ORG}/{FORIO_PROJECT}/;saved=true;trashed=false"
-    url += f"?sort=created&direction=desc&startRecord=0&endRecord={limit}"
+    # Combine all variables we want to extract
+    all_variables = []
+    if 'variables' in config:
+        all_variables.extend(config['variables'].get('kpis', []))
+        all_variables.extend(config['variables'].get('budgets', []))
+        all_variables.extend(config['variables'].get('additional', []))
+    
+    # If no variables configured, use defaults
+    if not all_variables:
+        all_variables = [
+            'accumulated_profit', 'compromised_systems', 'systems_availability',
+            'prevention_budget', 'detection_budget', 'response_budget'
+        ]
     
     try:
-        resp = requests.get(url, headers=headers)
-        if resp.status_code == 200:
-            runs = resp.json()
-            
-            # Load manual data
+        # Try enhanced extraction with variables
+        runs = extractor.fetch_runs_with_variables(
+            variables=all_variables,
+            model_name=config.get('model_name'),
+            groups=config.get('groups'),
+            start_record=0,
+            end_record=limit
+        )
+        
+        if runs:
+            # Load manual data for fallback
             manual_data = load_manual_data()
             
-            # Merge manual data with run metadata
+            # Check if runs have variables, merge with manual data if needed
             for run in runs:
                 run_id = run['id']
-                if run_id in manual_data:
-                    # Merge manual data into run
+                has_vars = bool(run.get('variables'))
+                
+                if has_vars:
+                    # Extract variables to top level for easier access
+                    for var in all_variables:
+                        if var in run.get('variables', {}):
+                            run[var] = run['variables'][var]
+                    run['has_data'] = True
+                elif run_id in manual_data:
+                    # Fall back to manual data
                     run.update(manual_data[run_id])
                     run['has_data'] = True
                 else:
                     run['has_data'] = False
             
             return runs
+    except Exception as e:
+        print(f"Enhanced extraction failed: {e}")
+    
+    # Fallback to basic metadata fetch
+    try:
+        runs = extractor.fetch_all_runs_metadata(start_record=0, end_record=limit)
+        manual_data = load_manual_data()
+        
+        for run in runs:
+            run_id = run['id']
+            if run_id in manual_data:
+                run.update(manual_data[run_id])
+                run['has_data'] = True
+            else:
+                run['has_data'] = False
+        
+        return runs
     except:
-        pass
-    return []
+        return []
 
 
 @app.route('/')
@@ -194,18 +251,66 @@ def api_compare():
 
 @app.route('/api/forio/status')
 def api_forio_status():
-    """Check Forio connection status."""
-    token = get_forio_token()
-    if not token:
-        return jsonify({'connected': False, 'error': 'Authentication failed'})
+    """Check Forio connection status with enhanced extraction details."""
+    # Test connection using extractor
+    status = extractor.test_connection()
     
-    runs = fetch_forio_runs(1)
+    if not status['authenticated']:
+        return jsonify({
+            'connected': False, 
+            'error': 'Authentication failed',
+            'details': status
+        })
+    
+    # Get config info
+    config = load_config()
+    
     return jsonify({
         'connected': True,
-        'runs_available': len(runs) > 0,
-        'run_count': len(runs),
-        'note': 'Variables not recorded in Vensim model'
+        'authenticated': status['authenticated'],
+        'runs_found': status['runs_found'],
+        'variables_recorded': status['variables_recorded'],
+        'sample_run': status.get('sample_run'),
+        'config': {
+            'variables': config.get('variables', {}),
+            'groups': config.get('groups'),
+            'model_name': config.get('model_name')
+        },
+        'extraction_method': 'enhanced' if status['variables_recorded'] else 'manual_fallback'
     })
+
+
+@app.route('/api/forio/extract', methods=['POST'])
+def api_forio_extract():
+    """Manually trigger data extraction with custom parameters."""
+    data = request.json
+    variables = data.get('variables', [])
+    groups = data.get('groups')
+    model_name = data.get('model_name')
+    limit = data.get('limit', 10)
+    
+    if not variables:
+        return jsonify({'error': 'No variables specified'}), 400
+    
+    try:
+        runs = extractor.fetch_runs_with_variables(
+            variables=variables,
+            model_name=model_name,
+            groups=groups,
+            start_record=0,
+            end_record=limit
+        )
+        
+        # Extract just the variables
+        extracted = extractor.extract_variables_from_runs(runs, variables)
+        
+        return jsonify({
+            'success': True,
+            'runs_fetched': len(runs),
+            'data': extracted
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':
