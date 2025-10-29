@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Agent Personality Bot Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <nav class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-robot text-3xl"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">Multi-Agent Dashboard</h1>
+                        <p class="text-sm text-blue-100">Cyber-Risk Simulation Analysis</p>
+                    </div>
+                </div>
+                <div id="forio-status" class="flex items-center space-x-2">
+                    <div class="animate-pulse">
+                        <i class="fas fa-circle text-yellow-300"></i>
+                    </div>
+                    <span class="text-sm">Checking connection...</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Alert Banner -->
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <div class="flex">
+                <i class="fas fa-exclamation-triangle text-yellow-400 mt-1 mr-3"></i>
+                <div>
+                    <p class="text-sm text-yellow-700">
+                        <strong>Note:</strong> Currently using mock data. The Vensim model doesn't record variables.
+                        See <a href="#" class="underline">documentation</a> for configuration instructions.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bot Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div id="bot-cards" class="col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Bot cards will be inserted here -->
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Runs List -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-bold text-gray-800">
+                            <i class="fas fa-list mr-2 text-blue-600"></i>
+                            Recent Runs
+                        </h2>
+                        <button onclick="loadRuns()" class="text-blue-600 hover:text-blue-800">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <div id="runs-list" class="space-y-3">
+                        <!-- Runs will be inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis Panel -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">
+                        <i class="fas fa-chart-bar mr-2 text-green-600"></i>
+                        KPI Comparison
+                    </h2>
+                    <canvas id="kpiChart" height="100"></canvas>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">
+                        <i class="fas fa-comments mr-2 text-purple-600"></i>
+                        Board Meeting Analysis
+                    </h2>
+                    <div id="analysis-panel" class="space-y-4">
+                        <p class="text-gray-500 text-center py-8">Select a run to see bot analysis</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Strategy Comparison -->
+        <div class="mt-6 bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-balance-scale mr-2 text-orange-600"></i>
+                Strategy Comparison
+            </h2>
+            <canvas id="strategyChart" height="80"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let runs = [];
+        let kpiChart = null;
+        let strategyChart = null;
+
+        // Check Forio connection status
+        async function checkForioStatus() {
+            try {
+                const response = await fetch('/api/forio/status');
+                const data = await response.json();
+                const statusEl = document.getElementById('forio-status');
+                
+                if (data.connected) {
+                    statusEl.innerHTML = `
+                        <i class="fas fa-circle text-green-300"></i>
+                        <span class="text-sm">Forio Connected (${data.run_count} runs)</span>
+                    `;
+                } else {
+                    statusEl.innerHTML = `
+                        <i class="fas fa-circle text-red-300"></i>
+                        <span class="text-sm">Forio Disconnected</span>
+                    `;
+                }
+            } catch (error) {
+                console.error('Status check failed:', error);
+            }
+        }
+
+        // Load bots
+        async function loadBots() {
+            try {
+                const response = await fetch('/api/bots');
+                const bots = await response.json();
+                const container = document.getElementById('bot-cards');
+                
+                container.innerHTML = bots.map(bot => `
+                    <div class="bg-gradient-to-br from-white to-gray-50 rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-lg font-bold text-gray-800">${bot.name}</h3>
+                            <i class="fas fa-user-tie text-2xl text-blue-600"></i>
+                        </div>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Focus:</span>
+                                <span class="font-semibold">${bot.kpi_focus}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Risk Tolerance:</span>
+                                <div class="flex-1 ml-2">
+                                    <div class="bg-gray-200 rounded-full h-2">
+                                        <div class="bg-blue-600 h-2 rounded-full" style="width: ${bot.personality.risk_tolerance * 100}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Ambition:</span>
+                                <div class="flex-1 ml-2">
+                                    <div class="bg-gray-200 rounded-full h-2">
+                                        <div class="bg-green-600 h-2 rounded-full" style="width: ${bot.personality.ambition * 100}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load bots:', error);
+            }
+        }
+
+        // Load runs
+        async function loadRuns() {
+            try {
+                const response = await fetch('/api/runs');
+                runs = await response.json();
+                const container = document.getElementById('runs-list');
+                
+                container.innerHTML = runs.map((run, index) => `
+                    <div onclick="analyzeRun(${index})" 
+                         class="p-4 border border-gray-200 rounded-lg hover:bg-blue-50 cursor-pointer transition">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="font-semibold text-gray-800">${run.strategy || 'Run ' + (index + 1)}</div>
+                                <div class="text-xs text-gray-500">
+                                    <i class="fas fa-shield-alt mr-1"></i>Prev: ${run.prevention_budget}
+                                    <i class="fas fa-search ml-2 mr-1"></i>Det: ${run.detection_budget}
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Update charts with all runs
+                updateCharts();
+            } catch (error) {
+                console.error('Failed to load runs:', error);
+            }
+        }
+
+        // Analyze a specific run
+        async function analyzeRun(index) {
+            const run = runs[index];
+            
+            try {
+                const response = await fetch('/api/evaluate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({run: run})
+                });
+                const analysis = await response.json();
+                
+                const panel = document.getElementById('analysis-panel');
+                panel.innerHTML = `
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                        <h3 class="font-bold text-blue-900 mb-2">
+                            <i class="fas fa-chart-line mr-2"></i>
+                            ${run.strategy || 'Run ' + (index + 1)}
+                        </h3>
+                        <div class="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-600">Profit:</span>
+                                <span class="font-bold text-green-700">$${run.accumulated_profit.toLocaleString()}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">Compromised:</span>
+                                <span class="font-bold text-red-700">${run.compromised_systems}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">Availability:</span>
+                                <span class="font-bold text-blue-700">${(run.systems_availability * 100).toFixed(1)}%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <h4 class="font-semibold text-gray-700">
+                            <i class="fas fa-users mr-2"></i>Bot Evaluations:
+                        </h4>
+                        ${analysis.feedback.map(f => `
+                            <div class="pl-4 py-2 border-l-2 border-gray-300">
+                                <p class="text-sm text-gray-700">${f}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="mt-4 space-y-3">
+                        <h4 class="font-semibold text-gray-700">
+                            <i class="fas fa-lightbulb mr-2"></i>Recommendations:
+                        </h4>
+                        ${analysis.recommendations.map(r => `
+                            <div class="pl-4 py-2 bg-yellow-50 border-l-2 border-yellow-400">
+                                <p class="text-sm text-gray-700">${r}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="mt-4 p-4 bg-purple-50 rounded-lg">
+                        <p class="text-sm text-purple-900">
+                            <i class="fas fa-handshake mr-2"></i>
+                            <strong>Board Dynamics:</strong> ${analysis.interaction}
+                        </p>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Failed to analyze run:', error);
+            }
+        }
+
+        // Update charts
+        function updateCharts() {
+            if (!runs.length) return;
+            
+            const labels = runs.map((r, i) => r.strategy || `Run ${i+1}`);
+            
+            // KPI Chart
+            const kpiCtx = document.getElementById('kpiChart').getContext('2d');
+            if (kpiChart) kpiChart.destroy();
+            
+            kpiChart = new Chart(kpiCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Profit ($M)',
+                            data: runs.map(r => r.accumulated_profit / 1000000),
+                            backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                            borderColor: 'rgb(34, 197, 94)',
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Compromised Systems',
+                            data: runs.map(r => r.compromised_systems),
+                            backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                            borderColor: 'rgb(239, 68, 68)',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {beginAtZero: true}
+                    }
+                }
+            });
+            
+            // Strategy Chart
+            const strategyCtx = document.getElementById('strategyChart').getContext('2d');
+            if (strategyChart) strategyChart.destroy();
+            
+            strategyChart = new Chart(strategyCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Prevention',
+                            data: runs.map(r => r.prevention_budget),
+                            backgroundColor: 'rgba(59, 130, 246, 0.7)'
+                        },
+                        {
+                            label: 'Detection',
+                            data: runs.map(r => r.detection_budget),
+                            backgroundColor: 'rgba(249, 115, 22, 0.7)'
+                        },
+                        {
+                            label: 'Response',
+                            data: runs.map(r => r.response_budget),
+                            backgroundColor: 'rgba(168, 85, 247, 0.7)'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        x: {stacked: true},
+                        y: {stacked: true, beginAtZero: true}
+                    }
+                }
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkForioStatus();
+            loadBots();
+            loadRuns();
+            
+            // Refresh status every 30 seconds
+            setInterval(checkForioStatus, 30000);
+        });
+    </script>
+</body>
+</html>
