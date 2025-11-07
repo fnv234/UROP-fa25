@@ -1,2 +1,9 @@
 .env
 REAL_DATA_GUIDE.md
+agent_calibration.json
+automated_simulation_data.json
+automated_simulation_runner.py
+merge_automated_data.py
+requirements_automation.txt
+inspect_forio_page.py
+simple_simulation_runner.py

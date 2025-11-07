@@ -87,7 +87,15 @@ def get_forio_token():
 
 def load_manual_data():
     """Load manually entered simulation data."""
-    if os.path.exists('simulation_data.json'):
+    # Try automated dataset first, then simulation_data.json
+    if os.path.exists('automated_dataset.json'):
+        with open('automated_dataset.json', 'r') as f:
+            data = json.load(f)
+            # Convert list to dict if needed
+            if isinstance(data, list):
+                return {item.get('id', f"auto_{i}"): item for i, item in enumerate(data)}
+            return data
+    elif os.path.exists('simulation_data.json'):
         with open('simulation_data.json', 'r') as f:
             return json.load(f)
     return {}
