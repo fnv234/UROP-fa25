@@ -18,31 +18,14 @@ python test_connection.py
 
 ## Setup
 
-### 1. Environment Variables
 
-Create a `.env` file in the project root with your Forio credentials:
-
-```bash
-# API Credentials (for OAuth)
-PUBLIC_KEY=your_public_key_here
-PRIVATE_KEY=your_private_key_here
-
-# Project Details
-FORIO_ORG=mitcams
-FORIO_PROJECT=cyberriskmanagement-ransomeware-2023
-
-# Optional: Participant credentials if needed
-FORIO_USERNAME=MIT@2025002
-FORIO_PASSWORD=your_password_here
-```
-
-### 2. Install Dependencies
+### 1. Install Dependencies
 
 ```bash
 pip install requests python-dotenv matplotlib pandas
 ```
 
-### 3. Understanding the Forio Project Structure
+### 2. Understanding the Forio Project Structure
 
 This project uses a **facilitator-based simulation** where:
 - Facilitator user: `MIT@2025001` (creates/manages sessions)
