@@ -438,6 +438,52 @@ class ImprovedForioExtractor:
             logger.error(f"Failed to save to {filename}: {e}")
             return False
 
+    def fetch_all_runs_metadata(
+        self,
+        start_record: int = 0,
+        end_record: int = 100
+    ) -> List[Dict]:
+        """
+        Fetch run metadata without variables (faster).
+        Matches the legacy ForioDataExtractor interface expected by dashboard.py.
+        """
+        token = self.get_access_token()
+        if not token:
+            return []
+        headers = {'Authorization': f'Bearer {token}'}
+        url = (
+            f'https://forio.com/v2/run/{self.org}/{self.project}/;saved=true;trashed=false'
+            f'?sort=created&direction=desc&startRecord={start_record}&endRecord={end_record}'
+        )
+        success, response_data, error = self._make_request('GET', url, headers=headers)
+        if not success or not isinstance(response_data, list):
+            logger.warning(f"fetch_all_runs_metadata failed: {error}")
+            return []
+        return response_data
+
+    def extract_variables_from_runs(
+        self,
+        runs: List[Dict],
+        variable_names: List[str]
+    ) -> List[Dict]:
+        """
+        Extract specific variables from run payloads into a flat structure.
+        Matches the legacy method used by dashboard.py.
+        """
+        extracted: List[Dict] = []
+        for run in runs:
+            run_data = {
+                'id': run.get('id'),
+                'created': run.get('created'),
+                'user': run.get('user', {}).get('userName', 'Unknown'),
+                'group': run.get('scope', {}).get('group', run.get('_extracted_group', 'default'))
+            }
+            variables = run.get('variables', {}) or {}
+            for var_name in variable_names:
+                run_data[var_name] = variables.get(var_name)
+            extracted.append(run_data)
+        return extracted
+
 
 # Standalone test script
 if __name__ == '__main__':
@@ -530,3 +576,7 @@ if __name__ == '__main__':
         print("  - README.md")
         print("  - SUPERVISOR_SUMMARY.md")
         print("  - Forio docs: https://forio.com/epicenter/docs/")
+
+# Backward-compatible alias so existing imports keep working
+# dashboard.py imports ForioDataExtractor
+ForioDataExtractor = ImprovedForioExtractor
