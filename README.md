@@ -114,22 +114,6 @@ The system generates:
 - `status_test.py`: OAuth and API connectivity test
 - `model_test.py`: Model listing test
 
-## Troubleshooting
-
-### No runs found
-Run the simulation through the Forio web interface first:
-1. Visit `https://forio.com/app/mitcams/cyberriskmanagement-ransomeware-2023/`
-2. Log in as facilitator (`MIT@2025001`) or participant (`MIT@2025002`)
-3. Complete at least one simulation run
-4. Make sure to **save** the run
-
-### Authentication errors
-- Verify `PUBLIC_KEY` and `PRIVATE_KEY` in `.env`
-- Check that keys have access to the project
-
-### Model file errors
-Facilitator projects don't support creating new runs via API. Use `multi_agent_demo.py` to analyze existing runs instead.
-
 ## Future Enhancements
 
 - [ ] Add LLM-based personality simulation for richer bot interactions
