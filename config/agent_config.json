@@ -1,0 +1,37 @@
+{
+  "agents": {
+    "CFO": {
+      "kpi": "accumulated_profit",
+      "target": {
+        "min": 1200000
+      },
+      "personality": {
+        "risk_tolerance": 0.3,
+        "friendliness": 0.6,
+        "ambition": 0.8
+      }
+    },
+    "CRO": {
+      "kpi": "compromised_systems",
+      "target": {
+        "max": 10
+      },
+      "personality": {
+        "risk_tolerance": 0.2,
+        "friendliness": 0.5,
+        "ambition": 0.6
+      }
+    },
+    "COO": {
+      "kpi": "systems_availability",
+      "target": {
+        "min": 0.92
+      },
+      "personality": {
+        "risk_tolerance": 0.5,
+        "friendliness": 0.7,
+        "ambition": 0.7
+      }
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "variables": {
+    "kpis": [
+      "accumulated_profit",
+      "compromised_systems",
+      "systems_availability"
+    ],
+    "budgets": [
+      "prevention_budget",
+      "detection_budget",
+      "response_budget"
+    ],
+    "additional": [
+      "Time",
+      "FINAL_TIME",
+      "INITIAL_TIME"
+    ]
+  },
+  "groups": [
+    "default"
+  ],
+  "model_name": null,
+  "extraction_settings": {
+    "max_runs": 100,
+    "saved_only": true,
+    "include_trashed": false
+  },
+  "notes": {
+    "variables": "List all Vensim model variables you want to extract",
+    "groups": "Add student group names to filter by specific groups",
+    "model_name": "Set to your Vensim model name if needed (e.g., 'CyberRisk.vmf')"
+  }
+}
