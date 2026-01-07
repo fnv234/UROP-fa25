@@ -338,4 +338,11 @@ if __name__ == '__main__':
     print("\n⚠️  Note: Using mock data until Vensim model records variables")
     print("\n" + "=" * 70)
     
-    app.run(debug=True, port=5000)
+    # Use port 5001 to avoid conflict with macOS AirPlay Receiver on port 5000
+    port = int(os.getenv('DASHBOARD_PORT', 5001))
+    host = os.getenv('DASHBOARD_HOST', '127.0.0.1')
+    
+    print(f"\n🌐 Dashboard will be available at: http://{host}:{port}")
+    print(f"   (Using port {port} to avoid conflict with macOS AirPlay on port 5000)")
+    
+    app.run(debug=True, host=host, port=port)
