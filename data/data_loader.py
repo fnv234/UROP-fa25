@@ -14,23 +14,52 @@ def generate_mock_runs(n: int = 5) -> List[Dict]:
     """Generate mock simulation data for demonstration."""
     runs = []
     for i in range(n):
-        prevention = random.randint(30, 70)
-        detection = random.randint(20, 50)
-        response = random.randint(10, 30)
+        # F1-F4 as percentages (should sum to ~100)
+        f1 = random.randint(25, 40)  # Prevention
+        f2 = random.randint(20, 35)  # Detection
+        f3 = random.randint(15, 25)  # Response
+        f4 = random.randint(10, 20)  # Recovery
+        total = f1 + f2 + f3 + f4
+        # Normalize to sum to 100
+        f1 = int(f1 * 100 / total)
+        f2 = int(f2 * 100 / total)
+        f3 = int(f3 * 100 / total)
+        f4 = 100 - f1 - f2 - f3  # Ensure sum is 100
         
-        profit = 1000000 + (prevention * 15000) + random.randint(-200000, 200000)
-        compromised = max(0, 20 - (prevention // 5) - (detection // 10) + random.randint(-3, 3))
-        availability = min(1.0, 0.85 + (prevention * 0.002) + (detection * 0.001) + random.uniform(-0.05, 0.05))
+        # Calculate outputs based on inputs
+        base_profit = 1000000
+        profit = base_profit + (f1 * 12000) + (f2 * 8000) - (f3 * 5000) - (f4 * 3000) + random.randint(-200000, 200000)
+        accumulated_profit = profit * random.uniform(0.8, 1.2)
+        compromised = max(0, 25 - (f1 // 3) - (f2 // 5) - (f3 // 7) - (f4 // 10) + random.randint(-3, 3))
+        availability = min(1.0, 0.80 + (f1 * 0.002) + (f2 * 0.0015) + (f3 * 0.001) + (f4 * 0.0005) + random.uniform(-0.05, 0.05))
+        
+        # Additional outputs
+        systems_at_risk = max(0, 15 - (f1 // 4) + random.randint(-2, 2))
+        fraction_to_make_profits = min(1.0, max(0.0, 0.7 - (f1 + f2 + f3 + f4) / 200 + random.uniform(-0.1, 0.1)))
+        impact_on_business = max(0, 10 - (f1 // 5) - (f2 // 6) - (f3 // 4) - (f4 // 3) + random.randint(-2, 2))
         
         runs.append({
             "id": f"mock_run_{i+1}",
             "strategy": f"Strategy {chr(65+i)}",
-            "prevention_budget": prevention,
-            "detection_budget": detection,
-            "response_budget": response,
-            "accumulated_profit": profit,
+            # F1-F4 inputs
+            "F1": f1,
+            "F2": f2,
+            "F3": f3,
+            "F4": f4,
+            # Also store with descriptive names for compatibility
+            "prevention_budget": f1,
+            "detection_budget": f2,
+            "response_budget": f3,
+            "recovery_budget": f4,
+            # Main outputs
+            "accumulated_profit": accumulated_profit,
+            "profits": profit,
             "compromised_systems": compromised,
             "systems_availability": availability,
+            # Additional outputs
+            "systems_at_risk": systems_at_risk,
+            "fraction_to_make_profits": fraction_to_make_profits,
+            "impact_on_business": impact_on_business,
             "created": datetime.now().isoformat(),
             "user": "Mock User",
             "group": "demo",

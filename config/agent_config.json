@@ -32,6 +32,47 @@
         "friendliness": 0.7,
         "ambition": 0.7
       }
+    },
+    "IT_Manager": {
+      "kpi": "systems_at_risk",
+      "target": {
+        "max": 10
+      },
+      "personality": {
+        "risk_tolerance": 0.4,
+        "friendliness": 0.6,
+        "ambition": 0.6
+      },
+      "note": "Optional agent for advanced settings - wants to limit systems at risk"
+    },
+    "CHRO": {
+      "kpi": "fraction_to_make_profits",
+      "target": {
+        "min": 0.6
+      },
+      "personality": {
+        "risk_tolerance": 0.5,
+        "friendliness": 0.8,
+        "ambition": 0.5
+      },
+      "note": "Optional agent for advanced settings - wants to balance fraction to make profits"
+    },
+    "COO_Business": {
+      "kpi": "impact_on_business",
+      "target": {
+        "max": 5
+      },
+      "personality": {
+        "risk_tolerance": 0.3,
+        "friendliness": 0.7,
+        "ambition": 0.8
+      },
+      "note": "Optional agent for advanced settings - wants to minimize business disturbance"
     }
+  },
+  "notes": {
+    "inputs": "F1-F4 represent percentages of IT budget: F1=prevention, F2=detection, F3=response, F4=recovery",
+    "main_outputs": "compromised_systems, profits, accumulated_profit",
+    "additional_outputs": "systems_at_risk, fraction_to_make_profits, impact_on_business"
   }
 }

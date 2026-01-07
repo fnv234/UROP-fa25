@@ -8,11 +8,15 @@ Since Vensim model doesn't save variables, this allows you to:
 """
 
 import os
+import sys
 import base64
 import requests
 import json
 from datetime import datetime
 from dotenv import load_dotenv
+
+# Add parent directory to path to import data modules
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 load_dotenv()
 PUBLIC_KEY = os.getenv("PUBLIC_KEY")
@@ -76,19 +80,36 @@ def enter_data_for_run(run):
     data['ransom_policy'] = input("  Ransom policy (pay/not_pay): ").strip() or "not_pay"
     data['run_limit'] = input("  Run limit (1-10 or unlimited): ").strip() or "unlimited"
     
-    # Budget allocation
-    print("\n💰 Budget Allocation:")
-    data['prevention_budget'] = float(input("  Prevention budget: ") or "0")
-    data['detection_budget'] = float(input("  Detection budget: ") or "0")
-    data['response_budget'] = float(input("  Response budget: ") or "0")
+    # Budget allocation (F1-F4 as percentages of IT budget)
+    print("\n💰 Budget Allocation (F1-F4 as % of IT budget):")
+    print("  F1 = Prevention, F2 = Detection, F3 = Response, F4 = Recovery")
+    data['F1'] = float(input("  F1 - Prevention budget (%): ") or "0")
+    data['F2'] = float(input("  F2 - Detection budget (%): ") or "0")
+    data['F3'] = float(input("  F3 - Response budget (%): ") or "0")
+    data['F4'] = float(input("  F4 - Recovery budget (%): ") or "0")
+    # Also store with descriptive names for compatibility
+    data['prevention_budget'] = data['F1']
+    data['detection_budget'] = data['F2']
+    data['response_budget'] = data['F3']
+    data['recovery_budget'] = data['F4']
     
-    # Results/Outcomes
-    print("\n📊 Simulation Results:")
+    # Results/Outcomes - Main outputs
+    print("\n📊 Simulation Results - Main Outputs:")
     data['accumulated_profit'] = float(input("  Accumulated profit ($): ") or "0")
     data['compromised_systems'] = int(input("  Compromised systems: ") or "0")
+    data['profits'] = float(input("  Profits ($): ") or "0")
     data['systems_availability'] = float(input("  Systems availability (0-1): ") or "1.0")
-    data['total_attacks'] = int(input("  Total attacks: ") or "0")
-    data['successful_attacks'] = int(input("  Successful attacks: ") or "0")
+    
+    # Additional outputs
+    print("\n📊 Simulation Results - Additional Outputs:")
+    data['systems_at_risk'] = float(input("  Systems at risk: ") or "0")
+    data['fraction_to_make_profits'] = float(input("  Fraction to make profits (0-1): ") or "0")
+    data['impact_on_business'] = float(input("  Impact on business (business disturbance): ") or "0")
+    
+    # Optional attack metrics
+    print("\n📊 Optional Attack Metrics:")
+    data['total_attacks'] = int(input("  Total attacks (or press Enter to skip): ") or "0") or None
+    data['successful_attacks'] = int(input("  Successful attacks (or press Enter to skip): ") or "0") or None
     
     # Metadata
     data['run_id'] = run_id
@@ -165,6 +186,23 @@ def main():
             if confirm == 'y':
                 existing_data[run_id] = data
                 save_data(existing_data)
+                
+                # Optionally save to Data API
+                try:
+                    from data.forio_data_api import ForioDataAPI
+                    data_api = ForioDataAPI()
+                    if data_api.is_configured():
+                        save_to_api = input("\nAlso save to Forio Data API? (y/n): ").strip().lower()
+                        if save_to_api == 'y':
+                            # Use run_id as document ID for consistency
+                            saved = data_api.save_simulation_result(data, document_id=run_id)
+                            if saved:
+                                print("✅ Also saved to Forio Data API")
+                except ImportError:
+                    pass
+                except Exception as e:
+                    print(f"⚠️  Could not save to Data API: {e}")
+                
                 print("\n✅ Data saved successfully!")
                 print("\nYou can now use this data in the dashboard.")
                 print("Run: python dashboard.py")

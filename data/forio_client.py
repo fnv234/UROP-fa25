@@ -150,9 +150,21 @@ class ForioClient:
                         # Flatten common variables to top level
                         for var in ['accumulated_profit', 'compromised_systems', 
                                    'systems_availability', 'prevention_budget',
-                                   'detection_budget', 'response_budget']:
+                                   'detection_budget', 'response_budget', 'recovery_budget',
+                                   'systems_at_risk', 'fraction_to_make_profits', 
+                                   'impact_on_business', 'profits']:
                             if var in variables:
                                 run[var] = variables[var]
+                        
+                        # Also map F1-F4 if present
+                        if 'prevention_budget' in variables:
+                            run['F1'] = variables.get('prevention_budget')
+                        if 'detection_budget' in variables:
+                            run['F2'] = variables.get('detection_budget')
+                        if 'response_budget' in variables:
+                            run['F3'] = variables.get('response_budget')
+                        if 'recovery_budget' in variables:
+                            run['F4'] = variables.get('recovery_budget')
                         return
             except:
                 continue
